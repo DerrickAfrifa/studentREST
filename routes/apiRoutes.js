@@ -1,93 +1,84 @@
-var express = require('express');
-var router = express.Router();
+let express = require('express');
+let router = express.Router();
 let Student = require('../models/student');
-
-const bodyParser = require("body-parser");
-
+let bodyParser = require("body-parser");
 let urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-let testData = {name : 'Derrick',
-	 			student_number : 15325022
-				};
+const STUDENT_NOT_FOUND_MESSAGE = "No such student found";
+const STUDENT_UPDATED_MESSAGE = "Student updated.";
+const STUDENT_DELETED_MESSAGE = "Student deleted.";
+const MISSING_FIELDS_MESSAGE = "Name and student number must both be provided."
+const DUPLICATE_STUDENT_NUMBER_MESSAGE = "Student number already exists.";
 
+const UNIQUE_ERROR = "unique";
+
+// API ENDPOINTS
 router.get('/students', (req, res)=>{
 	Student.find({}, (err, students)=>{
-		console.log(students);
 		res.json(students);
 	});
 });
 
 router.get('/student/:id', (req, res)=>{
-	testData.student_number = req.params.id;
-	res.json(testData );
+	let response = {};
 	Student.findOne({student_number : req.params.id}, (err, student)=>{
-		if (err) {throw err;}
-		res.json(student);
+		if(!student){
+			response.message = STUDENT_NOT_FOUND_MESSAGE;
+			res.json(response);
+		}else{
+			res.json(student);
+		}
 	});
 });
 
 router.post('/student', urlencodedParser, (req, res)=>{
-	let newStudent = new Student({
-		name : req.body.name,
-		student_number : req.body.student_number
-	});
-	newStudent.save((err)=>{
-		if (err) {throw err;}
-		res.json(newStudent);
-	});
-});
-
-router.put('/student/:id', (req, res)=>{
-	Student.findOne({student_number : req.params.id}, (err, student)=>{
+	let response = {};
+	if(!req.body.name || !req.body.student_number){
+		response.message = MISSING_FIELDS_MESSAGE;
+		res.json(response);
+	}else{
 		let newStudent = new Student({
 			name : req.body.name,
 			student_number : req.body.student_number
 		});
 		newStudent.save((err)=>{
-			if (err) {throw err;}
-			res.json(newStudent);
+			if (err && err.errors.student_number.kind == UNIQUE_ERROR) {
+				response.message = DUPLICATE_STUDENT_NUMBER_MESSAGE;
+				res.json(response);
+			}else{
+				res.json(newStudent);
+			}
 		});
+	}
+});
+
+router.put('/student/:student_number', urlencodedParser, (req, res)=>{
+	let response = {};
+	Student.findOneAndUpdate({student_number : req.params.student_number}, 
+		{$set:{name: req.body.name}}, {new: true}, (err, student)=>{
+			if(!student){
+				response.message = STUDENT_NOT_FOUND_MESSAGE;
+				res.json(response);
+			}else{
+				response.message = STUDENT_UPDATED_MESSAGE;
+				response.student = student;
+				res.json(response);
+			}
 	});
 });
 
-
 router.delete('/student/:id', (req, res)=>{
-	res.json(testData);
+	let response = {};
+	Student.findOneAndDelete({student_number : req.params.id}, (err, student)=>{
+		if(!student){
+			response.message = STUDENT_NOT_FOUND_MESSAGE;
+			res.json(response);
+		}else{
+			response.message = STUDENT_DELETED_MESSAGE;
+			response.student = student;
+			res.json(response);
+		}
+	});
 });
-// router.post('/add', urlencodedParser, (req, res)=>{
-// 	User.findOne({twitter_id : req.user.twitter_id}, (err, user)=>{
-// 		let question = new Question({
-// 			owner : user._id,
-// 			answered : false,
-// 			text : req.body.question,
-// 			answers : []
-// 		});
-// 		question.save((err)=>{
-// 			if (err) {throw err;}
-// 			res.redirect('/account');
-// 		});
-// 	});
-// });
-
-// router.get('/answers/:qid', (req, res)=>{
-// 	let loggedin = req.user;
-// 	let qid = req.params.qid;
-// 	Question.findOne({_id: qid}, (err, question)=>{
-// 		if (err) {throw err;}
-// 		Answer.find({question: qid}, (err, answers)=>{
-// 			if (err) {throw err;}
-// 			res.render('answers', {question: question, answers: answers, loggedin: loggedin});
-// 		});
-// 	});
-// });
-
-// router.post('/answers/correct', (req, res)=>{
-// 	Answer.findByIdAndUpdate(req.body.correct_answer, {$set : {correct : true}}, { new : true }, (err, answer)=>{
-// 		if (err) {throw err;}
-// 		Question.update({_id : answer.question}, { $set: {answered : true}}, (err, question)=>{
-// 			res.redirect('/account');
-// 		});
-// 	});
-// });
 
 module.exports = router;

@@ -5,7 +5,7 @@ const routes = require('./routes')
 const bodyParser = require("body-parser");
 
 console.log('url: ', URL);
-let db = mongoose.connect(URL);
+let db = mongoose.connect(URL, { useNewUrlParser: true });
 app = express()
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -16,7 +16,3 @@ app.get('/', (req, res)=>{
 routes(app).listen(process.env.PORT, ()=>{
 	console.log('listening on port: ', process.env.PORT);
 });
-
-// app.listen(process.env.DB_URL, ()=>{
-// 	console.log("Listening on port " + process.env.DB_URL);
-// });
