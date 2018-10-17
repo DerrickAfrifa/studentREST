@@ -82,3 +82,21 @@ router.delete('/student/:id', (req, res)=>{
 });
 
 module.exports = router;
+
+/*
+
+GET Get all students.
+curl -X GET http://localhost:3000/api/students
+
+POST Post a student.
+curl --data "name=Seng&student_number=15325449" http://localhost:3000/api/student
+
+PUT Update student.
+curl -X PUT -d "name=John" http://localhost:3000/api/student/15325444            
+
+DELETE Delete a student.
+curl -X DELETE http://localhost:3000/api/student/15325099                           
+
+
+
+*/
